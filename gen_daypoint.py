@@ -33,9 +33,12 @@ def zscore_norm(table):
 
 # generate daypoint using all stock info
 # 0-29: feature
-# target0: 39 close - 29 close
-# target1: 40 close - 30 close
-# target2: 35 close - 30 close
+# target0: 34 close - 29 close
+# target1: 39 close - 29 close
+# target2: 49 close - 29 close
+# target3: 35 close - 30 close
+# target4: 40 close - 30 close
+# target5: 50 close - 30 close
 # args = [
 # date_list: containing all date 
 # table_list: containing all table dataframe
@@ -63,25 +66,33 @@ def process_daypoint(args):
         stock_set = stock_set & set(table_list[j]["code"])
         group_table.append(table_list[j].groupby('code'))
         j += 1
-    while j <= i + 11: #29-40
+    while j <= i + 21: #29-50
         stock_set = stock_set & set(table_list[j]["code"])
         j += 1
 
     # generate daypoint for each stock
-    for stock in stock_set:
+    for stock in tqdm(stock_set):
         # get basic info [stock, date]
         basic_info.append([stock, date_list[i].strftime('%Y-%m-%d')])
 
         # get target
         T0_close = table_list[i][table_list[i]["code"] == stock]["close"].item()[-1]
         T1_close = table_list[i + 1][table_list[i + 1]["code"] == stock]["close"].item()[-1]
+        T5_close = table_list[i + 5][table_list[i + 5]["code"] == stock]["close"].item()[-1]
         T6_close = table_list[i + 6][table_list[i + 6]["code"] == stock]["close"].item()[-1]
         T10_close = table_list[i + 10][table_list[i + 10]["code"] == stock]["close"].item()[-1]
         T11_close = table_list[i + 11][table_list[i + 11]["code"] == stock]["close"].item()[-1]
-        target0 = (T10_close - T0_close) / T0_close
-        target1 = (T11_close - T1_close) / T1_close
-        target2 = (T6_close - T1_close) / T1_close
-        target.append([target0, target1, target2])
+        T20_close = table_list[i + 20][table_list[i + 20]["code"] == stock]["close"].item()[-1]
+        T21_close = table_list[i + 21][table_list[i + 21]["code"] == stock]["close"].item()[-1]
+
+        target0 = (T5_close - T0_close) / T0_close
+        target1 = (T10_close - T0_close) / T0_close
+        target2 = (T20_close - T0_close) / T0_close
+        target3 = (T6_close - T1_close) / T1_close
+        target4 = (T11_close - T1_close) / T1_close
+        target5 = (T21_close - T1_close) / T1_close
+
+        target.append([target0, target1, target2, target3, target4, target5])
 
         # get feature
         result = [[], [], [], [], [], []]
@@ -111,29 +122,12 @@ def process_daypoint(args):
     vwap = np.array(vwap)
     basic_info = np.array(basic_info)
 
-    volume = volume / volume[:, 0].reshape((-1, 1))
-    open = open / close[:, 0].reshape((-1, 1))
-    high = high / close[:, 0].reshape((-1, 1))
-    low = low / close[:, 0].reshape((-1, 1))
-    close = close / close[:, 0].reshape((-1, 1))
-    vwap = vwap / close[:, 0].reshape((-1, 1))
-
-
-    # volume = time_norm(np.array(volume))
-    # open = time_norm(np.array(open))
-    # high = time_norm(np.array(high))
-    # low = time_norm(np.array(low))
-    # close = time_norm(np.array(close))
-    # vwap = time_norm(np.array(vwap))
-    # basic_info = np.array(basic_info)
-
-    # open = zscore_norm(open)
-    # high = zscore_norm(high)
-    # low = zscore_norm(low)
-    # close = zscore_norm(close)
-    # vwap = zscore_norm(vwap)
-    # volume = zscore_norm(volume)
-    # target = zscore_norm(target)
+    volume = volume / volume[:, -1].reshape((-1, 1))
+    open = open / close[:, -1].reshape((-1, 1))
+    high = high / close[:, -1].reshape((-1, 1))
+    low = low / close[:, -1].reshape((-1, 1))
+    vwap = vwap / close[:, -1].reshape((-1, 1))
+    close = close / close[:, -1].reshape((-1, 1))
 
     day_data = np.concatenate([basic_info, target, open, high, low, close, vwap, volume], axis=1)
     # with builtins.open(f"./full_data/day_datapoint/{date_list[i].strftime('%Y-%m-%d')}.pickle", 'wb') as f:
@@ -149,11 +143,11 @@ def generate_daypoint():
     print(date_list[29:-11])
 
     # serial 
-    # for i in range(29, len(date_list) - 11):
+    # for i in range(29, len(date_list) - 21):
     #     process_daypoint([date_list, table_list, i])
 
-    args_list = [( date_list, table_list, i) for i in range(29, len(date_list) - 11)]
-    with Pool(processes=4) as pool:
+    args_list = [( date_list, table_list, i) for i in range(29, len(date_list) - 21)]
+    with Pool(processes=5) as pool:
         pool.map(process_daypoint, args_list)
 
 
