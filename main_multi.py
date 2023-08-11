@@ -28,15 +28,22 @@ def loss_fn(pred, true, L2_weight):
 
     return neg_ic + L2_weight * L2norm, neg_ic, L2norm
 
-# python main_multi.py --end 2020-07-01 --target 0
+# python main_multi.py --end 2020-05-31 --target 0
+# python main_multi.py --end 2016-12-31 --target 0
+# python main_multi.py --end 2017-12-31 --target 0
+# python main_multi.py --end 2018-12-31 --target 0
+# python main_multi.py --end 2019-12-31 --target 0
+# python main_multi.py --end 2020-12-31 --target 0
+# python main_multi.py --end 2021-12-31 --target 0
+# python main_multi.py --end 2022-12-31 --target 0
+# python main_multi.py --end 2023-12-31 --target 0
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--end", type=str, help="end date", default="2016-12-32")
     parser.add_argument("--target", type=int, help="specify which target to be used", default=0)
     args = parser.parse_args()
 
-    # 参数
-    input_size = 6 #每天的特征维度
+    input_size = 6 # feature number of each day
     num_layers = 1
     hidden_size = 64
     output_size = 30
@@ -45,15 +52,15 @@ if __name__ == "__main__":
     batch_size = 1024
     L2_weight = 0.1
 
-    file_list_init = get_file_list('./data/day_datapoint/')[:]
+    file_list_init = get_file_list('./data/day_datapoint/')
     file_list = []
     test_end = args.end # '2020-07-01'
     target_index = args.target
 
     for i in range (len(file_list_init)):
-        if file_list_init[i][-14:] <= test_end:
+        file_name = file_list_init[i].split('/')[-1]
+        if file_name.split('.')[0] <= test_end:
             file_list.append(file_list_init[i])
-    file_list = file_list[:-2]
 
     train_len = int(len(file_list) * 4 / 5)
     train_list = file_list[:train_len]
@@ -67,11 +74,11 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    gru = GRU_multi(input_size, hidden_size, output_size, num_layers)
+    device = torch.device('cpu')
+    gru = GRU_multi(input_size, hidden_size, output_size, num_layers, device)
     model = gru
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    device = torch.device('cuda')
-    model = model.to(device)
+    model.to(device)
 
     best_test_loss = 100
     best_train_loss = 100
