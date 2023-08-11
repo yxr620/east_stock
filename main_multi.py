@@ -4,7 +4,7 @@ import argparse
 
 from utils import get_file_list, day_dataset, day_dataset_para
 from torch.utils.data import DataLoader
-from model import GRUModel, LSTMModel, AGRUModel
+from model import GRUModel, LSTMModel, AGRUModel, GRU_multi
 
 # correctness checked
 # @para pred: torch.tensor of shape (x)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    gru = GRUModel(input_size, hidden_size, num_layers, output_size)
+    gru = GRU_multi(input_size, hidden_size, num_layers, output_size)
     model = gru
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     device = torch.device('cpu')
@@ -91,6 +91,7 @@ if __name__ == "__main__":
             train_loss += loss.item()
             neg_ic += neg_ic_
             l2_norm += l2_norm_
+            print("shit")
 
         train_loss = train_loss / len(train_loader)
         neg_ic = neg_ic / len(train_loader)
