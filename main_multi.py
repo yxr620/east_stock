@@ -5,6 +5,7 @@ import argparse
 from utils import get_file_list, day_dataset, day_dataset_para
 from torch.utils.data import DataLoader
 from model import GRUModel, LSTMModel, AGRUModel, GRU_multi
+from tqdm import tqdm
 
 # correctness checked
 # @para pred: torch.tensor of shape (x)
@@ -15,7 +16,7 @@ def cal_negcorr(pred, true):
     corr = torch.corrcoef(y)[0, 1]
     return -corr
 
-def loss_fn(pred, true):
+def loss_fn(pred, true, L2_weight):
     pred_mean = torch.mean(pred, dim=1)
     neg_ic = cal_negcorr(pred_mean, true)
     corr_mat = torch.corrcoef(pred.T)
@@ -25,12 +26,12 @@ def loss_fn(pred, true):
     # print(pred_mean.shape)
     # print(L2norm)
 
-    return L2norm + neg_ic, neg_ic, L2norm
+    return neg_ic + L2_weight * L2norm, neg_ic, L2norm
 
 # python main_multi.py --end 2020-07-01 --target 0
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--end", type=str, help="end date", default="John")
+    parser.add_argument("--end", type=str, help="end date", default="2016-12-32")
     parser.add_argument("--target", type=int, help="specify which target to be used", default=0)
     args = parser.parse_args()
 
@@ -42,6 +43,7 @@ if __name__ == "__main__":
     num_epochs = 100
     learning_rate = 0.0001
     batch_size = 1024
+    L2_weight = 0.1
 
     file_list_init = get_file_list('./data/day_datapoint/')[:]
     file_list = []
@@ -65,11 +67,11 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    gru = GRU_multi(input_size, hidden_size, num_layers, output_size)
+    gru = GRU_multi(input_size, hidden_size, output_size, num_layers)
     model = gru
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    device = torch.device('cpu')
-    model.to(device)
+    device = torch.device('cuda')
+    model = model.to(device)
 
     best_test_loss = 100
     best_train_loss = 100
@@ -78,20 +80,21 @@ if __name__ == "__main__":
         train_loss = 0
         neg_ic = 0
         l2_norm = 0
-        for batch_idx, (data, target) in enumerate(train_loader):
+        for data, target in (train_loader):
             data, target = data.to(device), target[:, target_index].to(device)
             optimizer.zero_grad()
             # print("shit")
             # print(data.shape)
 
             output = model(data)
-            loss, neg_ic_, l2_norm_ = loss_fn(output, target)
+
+            loss, neg_ic_, l2_norm_ = loss_fn(output, target, L2_weight)
             loss.backward()
             optimizer.step()
             train_loss += loss.item()
             neg_ic += neg_ic_
             l2_norm += l2_norm_
-            print("shit")
+            # print("shit")
 
         train_loss = train_loss / len(train_loader)
         neg_ic = neg_ic / len(train_loader)
@@ -113,9 +116,9 @@ if __name__ == "__main__":
                 test_output.append(output)
                 test_target.append(target)
 
-            pred = torch.concat(test_output).squeeze()
+            pred = torch.concat(test_output, dim=0)
             true = torch.concat(test_target).squeeze()
-            valid_loss, neg_ic_, l2_norm_ = loss_fn(pred, true)
+            valid_loss, neg_ic_, l2_norm_ = loss_fn(pred, true, L2_weight)
             neg_ic += neg_ic_
             l2_norm += l2_norm_
         print(f'Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f}')

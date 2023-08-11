@@ -28,7 +28,7 @@ class GRU_multi(nn.Module):
         self.bn = nn.BatchNorm1d(output_size)
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).requires_grad_()
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).requires_grad_().to(torch.device('cuda'))
         out, _ = self.gru(x, h0)
         out = self.fc(out[:, -1, :])
         out = self.bn(out)
