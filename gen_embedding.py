@@ -8,6 +8,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # python gen_embedding.py --start 2020-01-01 --endtrain 2020-04-30 --endtest 2020-05-31 --target 0
+# python gen_embedding.py --start 2016-01-01 --endtrain 2016-12-31 --endtest 2017-12-31 --target 0
+# python gen_embedding.py --start 2017-01-01 --endtrain 2017-12-31 --endtest 2018-12-31 --target 0
+# python gen_embedding.py --start 2018-01-01 --endtrain 2018-12-31 --endtest 2019-12-31 --target 0
+# python gen_embedding.py --start 2019-01-01 --endtrain 2019-12-31 --endtest 2020-12-31 --target 0
+# python gen_embedding.py --start 2020-01-01 --endtrain 2020-12-31 --endtest 2021-12-31 --target 0
+# python gen_embedding.py --start 2021-01-01 --endtrain 2021-12-31 --endtest 2022-12-31 --target 0
+# python gen_embedding.py --start 2022-01-01 --endtrain 2022-12-31 --endtest 2023-12-31 --target 0
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--start", type=str, help="start date of training", default="2020-01-01")
