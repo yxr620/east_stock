@@ -91,7 +91,6 @@ def process_daypoint(args):
         target3 = (T6_close - T1_close) / T1_close
         target4 = (T11_close - T1_close) / T1_close
         target5 = (T21_close - T1_close) / T1_close
-
         target.append([target0, target1, target2, target3, target4, target5])
 
         # get feature

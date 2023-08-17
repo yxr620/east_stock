@@ -16,7 +16,6 @@ def add_month(date):
     return date
 
 def pred_month(start, endtrain, endtest, target):
-
     # Step 1: Load and Prepare the Data
     data = np.loadtxt(f'./data/result0/{start}_{endtest}.txt', delimiter=' ', dtype=str)
     print(data.shape)

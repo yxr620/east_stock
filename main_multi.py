@@ -21,10 +21,6 @@ def loss_fn(pred, true, L2_weight):
     neg_ic = cal_negcorr(pred_mean, true)
     corr_mat = torch.corrcoef(pred.T)
     L2norm = torch.norm(corr_mat) # L2norm of corr mat, ie penalty
-    # print(pred.shape)
-    # print(true.shape)
-    # print(pred_mean.shape)
-    # print(L2norm)
 
     return neg_ic + L2_weight * L2norm, neg_ic, L2norm
 
