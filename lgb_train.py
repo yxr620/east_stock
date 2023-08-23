@@ -15,10 +15,8 @@ def add_month(date):
 
     return date
 
-def pred_month(start, endtrain, endtest, target):
-
+def pred_month(start, endtrain, starttest, endtest, target, data):
     # Step 1: Load and Prepare the Data
-    data = np.loadtxt(f'./data/result0/{start}_{endtest}.txt', delimiter=' ', dtype=str)
     print(data.shape)
 
     info = data[:, :2]
@@ -28,17 +26,29 @@ def pred_month(start, endtrain, endtest, target):
     print(y.shape)
     print(X.shape)
 
+    # get the index which are used to split dataset
     train_index = 0
+    test_index = 0
+    test_start_index = 0
     for row in data:
         if row[1] > endtrain:
             break
         train_index += 1
+    for row in data:
+        if row[1] > endtest:
+            break
+        test_index += 1
+    for row in data:
+        if row[1] > starttest: break
+        test_start_index += 1
+
+
     print(train_index)
     split_index = int(train_index * 0.8)
     # exit()
-    X_train, X_val, X_test = X[:split_index, :], X[split_index: train_index, :], X[train_index:, :]
-    y_train, y_val, y_test = y[:split_index, :], y[split_index: train_index, :], y[train_index:, :]
-    info_test = info[train_index:, :]
+    X_train, X_val, X_test = X[:split_index, :], X[split_index: train_index, :], X[test_start_index:test_index, :]
+    y_train, y_val, y_test = y[:split_index, :], y[split_index: train_index, :], y[test_start_index:test_index, :]
+    info_test = info[test_start_index:test_index, :]
 
     # Step 2: Create a LightGBM Dataset
     train_data = lgb.Dataset(X_train, label=y_train[:, target])
@@ -62,10 +72,10 @@ def pred_month(start, endtrain, endtest, target):
     model = lgb.train(params, train_data, num_boost_round=num_boost_round, valid_sets=[val_data])
 
     # Step 5: Save the Model
-    model.save_model(f"./data/result0/lgb_{start}_{endtest}.txt")
+    model.save_model(f"./data/result{target}/{start}_{endtest}_lgb.txt")
 
     # Step 6: Load the Model
-    model = lgb.Booster(model_file=f"./data/result0/{start}_{endtest}_lgb.txt")
+    model = lgb.Booster(model_file=f"./data/result{target}/{start}_{endtest}_lgb.txt")
 
     # Step 7: Make Predictions on New Data
     # Assuming you have new data stored in a DataFrame called 'new_data'
@@ -79,7 +89,15 @@ def pred_month(start, endtrain, endtest, target):
     print(test_loss)
 
     result = np.concatenate([info_test, y_test_pred.reshape((-1, 1))], axis=1)
-    np.savetxt(f"./data/result0/{endtrain}_{endtest}_pred.csv", result, fmt="%s")
+    print(result.shape)
+    table = pd.DataFrame(result, columns=["stock_code", "date", "pred"])
+    group = table.groupby("date")
+    keys = group.groups.keys()
+    for key in keys:
+        print(f"{key} {group.get_group(key).shape}")
+
+    # exit()
+    table.to_csv(f"./data/result{target}/{starttest}_{endtest}_pred.csv", index=False)
 
 
 
@@ -104,17 +122,19 @@ if __name__ == "__main__":
     start = args.start
     endtrain = args.endtrain
     endtest = args.endtest
-    target = args.target
+    target_index = args.target
+    target_map = [5, 10, 20, 6, 11, 21]
 
+    data = np.loadtxt(f'./data/result{target_index}/{start}_{endtest}.txt', delimiter=' ', dtype=str)
     pre_date = datetime.strptime(endtrain, "%Y-%m-%d")
     iter_date = add_month(pre_date)
     end_date = datetime.strptime(endtest, "%Y-%m-%d")
     while iter_date <= end_date:
-        start = start
-        end_train = pre_date
+        end_train = pre_date - relativedelta(days=target_map[target_index]) # avoid data leaking
+        start_test = pre_date
         end_test = iter_date
-        print(f"start {start}, end_train {end_train}, end_test {end_test}")
-        pred_month(start, end_train, end_test, target)
+        print(f"start {start}, end_train {end_train}, start_test{start_test},  end_test {end_test}")
+        pred_month(start, end_train.strftime("%Y-%m-%d"), start_test.strftime("%Y-%m-%d"), end_test.strftime("%Y-%m-%d"), target_index, data)
 
         # update pre_date and iter_date 
         pre_date = iter_date

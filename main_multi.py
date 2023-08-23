@@ -56,12 +56,15 @@ if __name__ == "__main__":
     file_list = []
     test_end = args.end # '2020-07-01'
     target_index = args.target
+    target_map = [5, 10, 20, 6, 11, 21]
 
     for i in range (len(file_list_init)):
         file_name = file_list_init[i].split('/')[-1]
         if file_name.split('.')[0] <= test_end:
             file_list.append(file_list_init[i])
 
+    # prevent data leaking
+    file_list = file_list[:-target_map[target_index]]
     train_len = int(len(file_list) * 4 / 5)
     train_list = file_list[:train_len]
     test_list = file_list[train_len:]
@@ -74,7 +77,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     valid_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-    device = torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     gru = GRU_multi(input_size, hidden_size, output_size, num_layers, device)
     model = gru
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -128,8 +131,7 @@ if __name__ == "__main__":
             valid_loss, neg_ic_, l2_norm_ = loss_fn(pred, true, L2_weight)
             neg_ic += neg_ic_
             l2_norm += l2_norm_
-        print(f'Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f}')
-        print(f'neg ic {neg_ic:.4f}, l2_norm {l2_norm:.4f}')
+        print(f'Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f} neg ic {neg_ic:.4f}, l2_norm {l2_norm:.4f}')
 
         if best_test_loss > valid_loss:
             best_test_loss = valid_loss

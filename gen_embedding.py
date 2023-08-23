@@ -71,6 +71,6 @@ if __name__ == "__main__":
     result = np.concatenate([result, total_target, total_embedding], axis=1)
 
     print(result.shape)
-    np.savetxt(f"./data/result0/{train_start}_{test_end}.txt", result, fmt="%s")
+    np.savetxt(f"./data/result{target_index}/{train_start}_{test_end}.txt", result, fmt="%s")
 
 
