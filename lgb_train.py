@@ -16,6 +16,7 @@ def add_month(date):
     return date
 
 def pred_month(start, endtrain, starttest, endtest, target, data):
+
     # Step 1: Load and Prepare the Data
     print(data.shape)
 
